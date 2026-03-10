@@ -1,0 +1,2 @@
+vastai-sdk @ git+https://github.com/vast-ai/vast-sdk.git
+requests==2.32.5
