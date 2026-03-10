@@ -201,21 +201,16 @@ class VastServerlessMossTTSClient:
         return data
 
     def health(self) -> Dict[str, Any]:
-        route_data = self.route(cost=self.route_cost)
+        route_data = self.route(cost=1.0)
         return self.call_worker(route_data, "/health", {})
 
     def generate(self, payload: Dict[str, Any], cost: Optional[float] = None) -> Dict[str, Any]:
         if cost is None:
-            text = payload.get("text", "") or ""
-            est_cost = max(1.0, len(text) / 200.0)
-            if payload.get("reference_audio"):
-                est_cost += 0.5
-            if payload.get("tokens"):
-                try:
-                    est_cost += float(payload["tokens"]) / 500.0
-                except Exception:
-                    pass
-            cost = round(est_cost, 3)
+            raw_steps = payload.get("max_new_tokens", 1024)
+            try:
+                cost = max(1.0, round(float(raw_steps), 3))
+            except Exception:
+                cost = 1024.0
 
         route_data = self.route(cost=cost)
         return self.call_worker(route_data, "/generate/sync", payload)

@@ -1,4 +1,3 @@
-import math
 import traceback
 
 print("[WORKER] worker.py started", flush=True)
@@ -29,19 +28,14 @@ print(f"[WORKER] MODEL_LOG_FILE={MODEL_LOG_FILE}", flush=True)
 def workload_calculator(payload: dict) -> float:
     print(f"[WORKER] workload_calculator payload keys={list(payload.keys())}", flush=True)
 
-    text = payload.get("text", "") or ""
-    char_cost = max(1.0, len(text) / 200.0)
+    # Use generation steps as workload unit so Vast Perf is close to steps/sec (~it/s).
+    raw_steps = payload.get("max_new_tokens", 1024)
+    try:
+        steps = float(raw_steps)
+    except Exception:
+        steps = 1024.0
 
-    if payload.get("reference_audio"):
-        char_cost += 0.5
-
-    if payload.get("tokens"):
-        try:
-            char_cost += float(payload["tokens"]) / 500.0
-        except Exception:
-            pass
-
-    result = float(round(char_cost, 3))
+    result = float(max(1.0, round(steps, 3)))
     print(f"[WORKER] workload_calculator result={result}", flush=True)
     return result
 
