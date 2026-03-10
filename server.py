@@ -11,6 +11,7 @@ print("[SERVER] server.py imported", flush=True)
 
 import torch
 import torchaudio
+import soundfile as sf
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from transformers import AutoModel, AutoProcessor
@@ -145,7 +146,7 @@ def startup_event():
         raise
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "POST"])
 def health():
     print("[SERVER] /health called", flush=True)
     return {
@@ -219,7 +220,8 @@ def generate_sync(req: GenerateRequest):
         if req.return_base64:
             print("[SERVER] encoding wav to base64", flush=True)
             buf = io.BytesIO()
-            torchaudio.save(buf, audio.unsqueeze(0).cpu(), sampling_rate, format="wav")
+            # Use soundfile for in-memory WAV encoding; torchaudio backend can fail on file-like objects.
+            sf.write(buf, audio.detach().cpu().to(torch.float32).numpy(), sampling_rate, format="WAV")
             wav_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
 
         print("[SERVER] /generate/sync completed successfully", flush=True)
